@@ -1,12 +1,9 @@
-# Python-generated files
-__pycache__/
-*.py[oc]
-build/
-dist/
-wheels/
-*.egg-info
-
-# Virtual environments
+.zig-cache
+.zig-global-cache
+.uv-cache
+zig-out
+zig-pkg
 .venv
-
-src/git_omit/_version.py
+__pycache__
+*.egg-info
+dist

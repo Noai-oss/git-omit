@@ -1,38 +1,58 @@
 # git-omit
 
-Small Git helpers for local-only ignores and tracked files you want Git to leave alone.
-
-## Local ignores
-
-| Kind | Git mechanism | Use when |
-| --- | --- | --- |
-| Untracked | `.git/info/exclude` | The file should stay local and untracked |
-| Tracked | `skip-worktree` | The file is tracked, but local changes should be left alone |
+Small Git helpers for files that should only be ignored locally.
 
 ## Installation
 
-```sh
+Install the native command from PyPI:
+
+```console
 uv tool install git-omit
-# or from GitHub
-uv tool install git+https://github.com/Noai-oss/git-omit
 ```
+
+Or install it into a Python environment:
+
+```console
+pip install git-omit
+```
+
+The environment installation supports both entry styles:
+
+```console
+git-omit --help
+python -m git_omit --help
+```
+
+Prebuilt wheels are published for Windows x86_64, macOS x86_64 and ARM64,
+and glibc-based Linux x86_64 and ARM64.
 
 ## Commands
 
-| Command | Example | Effect |
-| --- | --- | --- |
-| `git-omit hide <pattern>...` | `git-omit hide '*.log'` | Add patterns to `.git/info/exclude` |
-| `git-omit unhide <pattern>...` | `git-omit unhide '*.log'` | Remove patterns from `.git/info/exclude` |
-| `git-omit freeze <path>...` | `git-omit freeze config.local.json` | Mark tracked files as `skip-worktree` |
-| `git-omit unfreeze <path>...` | `git-omit unfreeze config.local.json` | Clear `skip-worktree` |
-| `git-omit list` | `git-omit list` | Print hidden patterns and frozen paths |
-| `git-omit --version` | `git-omit --version` | Print the version |
+| Command | Effect |
+| --- | --- |
+| `git-omit hide <pattern>...` | Add patterns to `.git/info/exclude` |
+| `git-omit unhide <pattern>...` | Remove patterns from `.git/info/exclude` |
+| `git-omit freeze <path>...` | Mark tracked files as `skip-worktree` |
+| `git-omit unfreeze <path>...` | Clear `skip-worktree` |
+| `git-omit list` | List hidden patterns and frozen paths |
 
-We recommend quoting glob patterns, like `'*.log'`, so your shell passes them unchanged.
+Quote glob patterns so the shell passes them to `git-omit` unchanged:
 
-`git-omit list` prints tab-separated lines:
+```console
+git-omit hide '*.log'
+```
 
-```text
-hide    *.log
-freeze  config.local.json
+## Building
+
+The native program requires Zig 0.16.0:
+
+```console
+zig build test
+zig build -Doptimize=ReleaseSmall
+```
+
+Build every platform wheel from one Linux host with Zig cross-compilation:
+
+```console
+python make_wheels.py --sdist
 ```
