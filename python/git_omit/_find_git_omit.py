@@ -1,11 +1,9 @@
-from __future__ import annotations
-
 import os
 import shutil
 import site
 import sysconfig
+from collections.abc import Iterator
 from pathlib import Path
-from typing import Iterator, Set
 
 
 class GitOmitNotFound(FileNotFoundError):
@@ -61,7 +59,7 @@ def find_git_omit_bin() -> str:
         )
 
     script_name = _script_name()
-    checked: Set[Path] = set()
+    checked: set[Path] = set()
     for directory in _candidate_script_dirs():
         binary = directory / script_name
         if binary in checked:
