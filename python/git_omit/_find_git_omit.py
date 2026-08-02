@@ -1,79 +1,105 @@
+# Portions derived from Ruff: https://github.com/astral-sh/ruff/tree/main/python/ruff
+# Copyright (c) 2022 Charles Marsh
+# SPDX-License-Identifier: MIT
+
 import os
-import shutil
-import site
+import sys
 import sysconfig
-from collections.abc import Iterator
-from pathlib import Path
 
 
-class GitOmitNotFound(FileNotFoundError):
-    """Raised when the Python module cannot locate the native executable."""
-
-
-def _script_name() -> str:
-    executable_suffix = sysconfig.get_config_var("EXE")
-    if not isinstance(executable_suffix, str):
-        executable_suffix = ".exe" if os.name == "nt" else ""
-    return f"git-omit{executable_suffix}"
-
-
-def _candidate_script_dirs() -> Iterator[Path]:
-    scripts = sysconfig.get_path("scripts")
-    if scripts:
-        yield Path(scripts)
-
-    if site.ENABLE_USER_SITE:
-        try:
-            preferred_scheme = sysconfig.get_preferred_scheme("user")
-        except AttributeError:
-            preferred_scheme = "nt_user" if os.name == "nt" else "posix_user"
-
-        user_scripts = sysconfig.get_path("scripts", scheme=preferred_scheme)
-        if user_scripts:
-            yield Path(user_scripts)
-
-    package_dir = Path(__file__).resolve().parent
-    yield package_dir.parent / ("Scripts" if os.name == "nt" else "bin")
-
-    for parent in package_dir.parents:
-        if parent.name.lower() not in {"site-packages", "dist-packages"}:
-            continue
-
-        if os.name == "nt":
-            yield parent.parent.parent / "Scripts"
-        else:
-            yield parent.parent.parent / "bin"
-        break
+class GitOmitNotFound(FileNotFoundError): ...
 
 
 def find_git_omit_bin() -> str:
-    """Return the installed native git-omit executable."""
+    """Return the git-omit binary path."""
 
-    override = os.environ.get("GIT_OMIT_BINARY")
-    if override:
-        binary = Path(override).expanduser()
-        if binary.is_file():
-            return str(binary)
-        raise GitOmitNotFound(
-            f"GIT_OMIT_BINARY does not point to a file: {binary}"
-        )
+    git_omit_exe = "git-omit" + sysconfig.get_config_var("EXE")
 
-    script_name = _script_name()
-    checked: set[Path] = set()
-    for directory in _candidate_script_dirs():
-        binary = directory / script_name
-        if binary in checked:
+    targets = [
+        # The scripts directory for the current Python
+        sysconfig.get_path("scripts"),
+        # The scripts directory for the base prefix
+        sysconfig.get_path("scripts", vars={"base": sys.base_prefix}),
+        # Above the package root, e.g., from `pip install --prefix` or `uv run --with`
+        (
+            # On Windows, with module path `<prefix>/Lib/site-packages/git_omit`
+            _join(
+                _matching_parents(
+                    _module_path(),
+                    "Lib/site-packages/git_omit",
+                ),
+                "Scripts",
+            )
+            if sys.platform == "win32"
+            # On Unix, with module path `<prefix>/lib/python3.13/site-packages/git_omit`
+            else _join(
+                _matching_parents(
+                    _module_path(),
+                    "lib/python*/site-packages/git_omit",
+                ),
+                "bin",
+            )
+        ),
+        # Adjacent to the package root, e.g., from `pip install --target`
+        # with module path `<target>/git_omit`
+        _join(_matching_parents(_module_path(), "git_omit"), "bin"),
+        # The user scheme scripts directory, e.g., `~/.local/bin`
+        sysconfig.get_path(
+            "scripts",
+            scheme=sysconfig.get_preferred_scheme("user"),
+        ),
+    ]
+
+    seen = []
+    for target in targets:
+        if not target:
             continue
-        checked.add(binary)
-        if binary.is_file():
-            return str(binary)
+        if target in seen:
+            continue
+        seen.append(target)
+        path = os.path.join(target, git_omit_exe)
+        if os.path.isfile(path):
+            return path
 
-    binary_on_path = shutil.which(script_name)
-    if binary_on_path:
-        return binary_on_path
-
-    locations = ", ".join(str(path) for path in checked)
+    locations = "\n".join(f" - {target}" for target in seen)
     raise GitOmitNotFound(
-        f"Could not find {script_name}. Checked: {locations}. "
-        "Reinstall the platform wheel or set GIT_OMIT_BINARY."
+        "Could not find the git-omit binary in any of the following "
+        f"locations:\n{locations}\n"
     )
+
+
+def _module_path() -> str | None:
+    path = os.path.dirname(__file__)
+    return path
+
+
+def _matching_parents(path: str | None, match: str) -> str | None:
+    """
+    Return the parent directory of `path` after trimming a `match` from the end.
+    The match is expected to contain `/` as a path separator, while the `path`
+    is expected to use the platform's path separator (e.g., `os.sep`). The path
+    components are compared case-insensitively and a `*` wildcard can be used
+    in the `match`.
+    """
+    from fnmatch import fnmatch
+
+    if not path:
+        return None
+    parts = path.split(os.sep)
+    match_parts = match.split("/")
+    if len(parts) < len(match_parts):
+        return None
+
+    if not all(
+        fnmatch(part, match_part)
+        for part, match_part in zip(reversed(parts), reversed(match_parts))
+    ):
+        return None
+
+    return os.sep.join(parts[: -len(match_parts)])
+
+
+def _join(path: str | None, *parts: str) -> str | None:
+    if not path:
+        return None
+    return os.path.join(path, *parts)
