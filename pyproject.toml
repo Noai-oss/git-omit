@@ -1,50 +1,40 @@
-[project]
-name = "git-omit"
-dynamic = ["version"]
-description = "Small Git helpers for local-only ignores and tracked files you want Git to leave alone"
-readme = "README.md"
-authors = [
-    { name = "Noai-oss", email = "jiuwoxiao@outlook.com" }
-]
-requires-python = ">=3.14"
-dependencies = []
-
-[project.scripts]
-git-omit = "git_omit.cli:cli"
-
 [build-system]
-requires = ["hatchling", "uv-dynamic-versioning"]
+requires = [
+    "hatchling>=1.27",
+    "packaging>=24",
+]
 build-backend = "hatchling.build"
 
-[tool.hatch.version]
-source = "uv-dynamic-versioning"
-
-[tool.uv-dynamic-versioning]
-vcs = "git"
-style = "pep440"
-bump = true
-
-[tool.uv]
-cache-keys = [
-  { file = "pyproject.toml" },
-  { git = { commit = true, tags = true } },
+[project]
+name = "git-omit"
+version = "0.0.2"
+description = "Small Git helpers for files that should only be ignored locally"
+readme = "README.md"
+requires-python = ">=3.10"
+license = "MIT"
+license-files = ["LICENSE"]
+authors = [
+    { name = "Noai-oss", email = "jiuwoxiao@outlook.com" },
 ]
 
-[dependency-groups]
-dev = [
-    "ruff>=0.15.20",
-    "ty>=0.0.55",
-]
+[project.urls]
+Repository = "https://github.com/Noai-oss/git-omit"
 
 [tool.hatch.build.targets.wheel]
-packages = ["src/git_omit"]
-artifacts = ["src/git_omit/_version.py"]
+packages = ["python/git_omit"]
+
+[tool.hatch.build.targets.wheel.hooks.custom]
+path = "hatch_build.py"
 
 [tool.hatch.build.targets.sdist]
-artifacts = ["src/git_omit/_version.py"]
-
-[tool.hatch.build.hooks.version]
-path = "src/git_omit/_version.py"
-template = '''
-__version__ = "{version}"
-'''
+include = [
+    "/build.zig",
+    "/build.zig.zon",
+    "/hatch_build.py",
+    "/LICENSE",
+    "/make_wheels.py",
+    "/pyproject.toml",
+    "/python",
+    "/README.md",
+    "/src",
+]
