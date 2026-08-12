@@ -1,0 +1,43 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    name: Test (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    steps:
+      - uses: actions/checkout@v7
+      - uses: mlugg/setup-zig@v2
+        with:
+          version: 0.16.0
+          use-cache: false
+      # Zig 0.16 cannot create its own global-cache tmp dir when fetching
+      # dependencies ("failed to create temporary zip file: FileNotFound",
+      # ziglang/zig#31964). The step envs below point the global cache at
+      # runner.temp/zig-global, so create its tmp dir up front.
+      - name: Prepare Zig cache
+        shell: bash
+        run: mkdir -p "${{ runner.temp }}/zig-global/tmp"
+      - name: Check formatting
+        run: zig fmt --check src build.zig
+        env:
+          ZIG_GLOBAL_CACHE_DIR: ${{ runner.temp }}/zig-global
+          ZIG_LOCAL_CACHE_DIR: ${{ runner.temp }}/zig-local
+      - name: Run tests
+        run: zig build test
+        env:
+          ZIG_GLOBAL_CACHE_DIR: ${{ runner.temp }}/zig-global
+          ZIG_LOCAL_CACHE_DIR: ${{ runner.temp }}/zig-local
+      - name: Build release
+        run: zig build -Doptimize=ReleaseSmall
+        env:
+          ZIG_GLOBAL_CACHE_DIR: ${{ runner.temp }}/zig-global
+          ZIG_LOCAL_CACHE_DIR: ${{ runner.temp }}/zig-local
