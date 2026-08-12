@@ -26,15 +26,7 @@ packages = ["python/git_omit"]
 [tool.hatch.build.targets.wheel.hooks.custom]
 path = "hatch_build.py"
 
-[tool.hatch.build.targets.sdist]
-include = [
-    "/build.zig",
-    "/build.zig.zon",
-    "/hatch_build.py",
-    "/LICENSE",
-    "/make_wheels.py",
-    "/pyproject.toml",
-    "/python",
-    "/README.md",
-    "/src",
+[dependency-groups]
+dev = [
+    "tomli>=2.4.1 ; python_full_version < '3.11'",
 ]
