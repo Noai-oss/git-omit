@@ -16,8 +16,12 @@ jobs:
     steps:
       - uses: actions/checkout@v7
       - uses: mlugg/setup-zig@v2
-        # Version left empty: resolves the Zig version from the
-        # minimum_zig_version field in build.zig.zon automatically.
+        with:
+          # Disabled: the workspace cache dir setup-zig sets for Zig breaks
+          # dependency downloads on fresh runners ("failed to create temporary
+          # zip file"). The Zig version is left empty so it is resolved from
+          # minimum_zig_version in build.zig.zon automatically.
+          use-cache: false
       - name: Check formatting
         run: zig fmt --check src build.zig
       - name: Run tests
