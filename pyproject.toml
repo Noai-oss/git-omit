@@ -7,7 +7,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "git-omit"
-version = "0.0.2"
+version = "0.0.3"
 description = "Small Git helpers for files that should only be ignored locally"
 readme = "README.md"
 requires-python = ">=3.10"
