@@ -17,14 +17,25 @@ jobs:
       - uses: actions/checkout@v7
       - uses: mlugg/setup-zig@v2
         with:
-          # Disabled: the workspace cache dir setup-zig sets for Zig breaks
-          # dependency downloads on fresh runners ("failed to create temporary
-          # zip file"). The Zig version is left empty so it is resolved from
+          # The Zig version is left empty so it is resolved from
           # minimum_zig_version in build.zig.zon automatically.
           use-cache: false
+      # setup-zig points the Zig cache at the workspace .zig-cache, which does
+      # not exist yet on fresh runners, so Zig fails to download dependencies
+      # ("failed to create temporary zip file: FileNotFound"). Override the
+      # cache dirs with an existing directory below.
       - name: Check formatting
         run: zig fmt --check src build.zig
+        env:
+          ZIG_GLOBAL_CACHE_DIR: ${{ runner.temp }}/zig-global
+          ZIG_LOCAL_CACHE_DIR: ${{ runner.temp }}/zig-local
       - name: Run tests
         run: zig build test
+        env:
+          ZIG_GLOBAL_CACHE_DIR: ${{ runner.temp }}/zig-global
+          ZIG_LOCAL_CACHE_DIR: ${{ runner.temp }}/zig-local
       - name: Build release
         run: zig build -Doptimize=ReleaseSmall
+        env:
+          ZIG_GLOBAL_CACHE_DIR: ${{ runner.temp }}/zig-global
+          ZIG_LOCAL_CACHE_DIR: ${{ runner.temp }}/zig-local
