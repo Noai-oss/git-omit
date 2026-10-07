@@ -9,8 +9,7 @@ import zipfile
 from collections.abc import Sequence
 from pathlib import Path
 
-# tomllib is available in Python 3.11+. The conditional dev dependency
-# supplies the same API as tomli when this release script runs on Python 3.10.
+# Python 3.10 使用开发依赖 tomli，3.11 起使用内置 tomllib。
 if sys.version_info >= (3, 11):
     import tomllib
 else:
@@ -33,51 +32,45 @@ TARGETS = {
 def _make_wheel_script_executable(wheel: Path) -> None:
     script_suffix = f".data/scripts/{CLI_NAME}"
 
-    with zipfile.ZipFile(wheel) as source:
-        matches = [
-            info for info in source.infolist() if info.filename.endswith(script_suffix)
-        ]
-        if len(matches) != 1:
-            raise RuntimeError(
-                f"Expected exactly one {CLI_NAME} script in {wheel}, found {len(matches)}"
-            )
+    # zipfile 未提供直接更新已有条目元数据的接口，因此重建 wheel 后替换。
+    with tempfile.NamedTemporaryFile(
+        dir=wheel.parent,
+        prefix=f".{wheel.name}.",
+        suffix=".tmp",
+        delete=False,
+    ) as temporary:
+        temporary_path = Path(temporary.name)
 
-        script_info = matches[0]
-        if (script_info.external_attr >> 16) & 0o111 == 0o111:
-            return
+    try:
+        with zipfile.ZipFile(wheel) as source:
+            matches = [
+                info for info in source.infolist() if info.filename.endswith(script_suffix)
+            ]
+            if len(matches) != 1:
+                raise RuntimeError(
+                    f"Expected exactly one {CLI_NAME} script in {wheel}, found {len(matches)}"
+                )
 
-        # ZIP entries cannot be modified in place, so rebuild the wheel
-        # before replacing the original archive.
-        with tempfile.NamedTemporaryFile(
-            dir=wheel.parent,
-            prefix=f".{wheel.name}.",
-            suffix=".tmp",
-            delete=False,
-        ) as temporary:
-            temporary_path = Path(temporary.name)
+            script_info = matches[0]
+            if (script_info.external_attr >> 16) & 0o111 == 0o111:
+                return
 
-        try:
             with zipfile.ZipFile(temporary_path, "w") as destination:
                 for info in source.infolist():
                     if info.filename == script_info.filename:
-                        # Unix file modes occupy the upper 16 bits of
-                        # external_attr when create_system is 3.
+                        # 3 表示 Unix；高 16 位保存文件类型和权限，低 16 位保留。
                         info.create_system = 3
                         info.external_attr = ((stat.S_IFREG | 0o755) << 16) | (
                             info.external_attr & 0xFFFF
                         )
                     destination.writestr(info, source.read(info))
-        except BaseException:
-            temporary_path.unlink(missing_ok=True)
-            raise
 
-    try:
         temporary_path.replace(wheel)
     finally:
         temporary_path.unlink(missing_ok=True)
 
 
-def parse_args(argv: Sequence[str]) -> argparse.Namespace:
+def parse_args(argv: Sequence[str] | None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description=f"Cross-compile {CLI_NAME} and build platform wheels.",
     )
@@ -135,16 +128,15 @@ def build_wheel(
         check=True,
     )
 
-    # Wheel filenames normalize each run of '-', '_', and '.' in the
-    # distribution name to a single underscore.
+    # wheel 包名需转小写，并将连续的 -、_、. 替换为一个下划线。
     # https://packaging.python.org/en/latest/specifications/binary-distribution-format/#escaping-and-unicode
-    wheel_name = re.sub(r"[-_.]+", "_", distribution_name)
+    wheel_name = re.sub(r"[-_.]+", "_", distribution_name).lower()
     wheel = out_dir / f"{wheel_name}-{version}-{wheel_tag}.whl"
     if not wheel.is_file():
         raise FileNotFoundError(f"Build did not produce the expected wheel: {wheel}")
 
-    # A Windows host cannot set Unix executable bits with chmod.
-    # Store mode 0755 in Unix-target wheel ZIP metadata instead.
+    # Windows 上的 chmod 无法设置 Unix 执行权限。
+    # 为 Linux/macOS 构建时，将 wheel 内可执行文件条目的权限设为 0755。
     if os.name == "nt" and "windows" not in zig_target:
         _make_wheel_script_executable(wheel)
 
@@ -152,13 +144,13 @@ def build_wheel(
 
 
 def main(argv: Sequence[str] | None = None) -> int:
-    args = parse_args(sys.argv[1:] if argv is None else argv)
+    args = parse_args(argv)
     distribution_name, version = read_project_metadata()
 
     out_dir = args.out_dir.resolve()
     out_dir.mkdir(parents=True, exist_ok=True)
 
-    # Avoid duplicate targets
+    # 按 TARGETS 顺序筛选目标；未指定时构建全部目标。
     selected = set(args.target or ())
     targets = (
         (zig_target, wheel_tag)
