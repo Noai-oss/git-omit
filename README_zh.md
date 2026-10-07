@@ -69,7 +69,7 @@ uv run python make_wheels.py
 设置 `UV_PUBLISH_TOKEN`，确保 `pyproject.toml`、`build.zig.zon` 与命令参数中的版本一致，并提交所有修改：
 
 ```console
-uv run python pypi_publish.py 0.0.3
+uv run python pypi_publish.py 0.0.4
 ```
 
 脚本检查版本、工作区和本地及远程标签，构建并校验五个平台的 wheel，先上传 PyPI，成功后再创建并推送版本标签。

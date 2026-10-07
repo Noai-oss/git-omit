@@ -1,6 +1,6 @@
 .{
     .name = .git_omit,
-    .version = "0.0.3",
+    .version = "0.0.4",
     .fingerprint = 0x4bcfb2dd42a6ee31,
     .minimum_zig_version = "0.17.0",
     .dependencies = .{

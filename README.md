@@ -80,7 +80,7 @@ Before publishing, set `UV_PUBLISH_TOKEN`, make sure the version matches in
 `pyproject.toml` and `build.zig.zon`, and commit all changes. Then run:
 
 ```console
-uv run python pypi_publish.py 0.0.3
+uv run python pypi_publish.py 0.0.4
 ```
 
 The script checks the versions, working tree, and local and remote tags, then
