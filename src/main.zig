@@ -8,3 +8,8 @@ pub fn main(init: std.process.Init) !void {
         else => return err,
     };
 }
+
+test {
+    _ = @import("exclude.zig");
+    _ = @import("git.zig");
+}

@@ -11,12 +11,13 @@ from make_wheels import ROOT, TARGETS, read_project_metadata
 
 
 def parse_version(value: str) -> str:
+    # 当前只支持了 x.y.z 的形式，没有完全遵循 https://peps.python.org/pep-0440/
     if not re.fullmatch(r"[0-9]+\.[0-9]+\.[0-9]+", value):
         raise argparse.ArgumentTypeError("must use the x.y.z format")
     return value
 
 
-def parse_args(argv: Sequence[str]) -> argparse.Namespace:
+def parse_args(argv: Sequence[str] | None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description="Build and publish all platform wheels to PyPI.",
     )
@@ -40,8 +41,7 @@ def run_command(
     capture_output: bool = False,
     text: bool = False,
 ) -> subprocess.CompletedProcess[str]:
-    # Use the host platform's quoting rules so the logged command can be
-    # copied into a terminal and run manually when a release step fails.
+    # 按当前平台的命令行规则转义，方便复制命令手动重试。
     command_text = (
         subprocess.list2cmdline(command) if os.name == "nt" else shlex.join(command)
     )
@@ -81,18 +81,25 @@ def ensure_tag_is_new(tag: str) -> None:
         text=True,
     )
     if result.returncode == 0:
-        fail(
-            f"Git tag already exists: {tag}\n"
-            "If it is safe to recreate this tag, remove it with:\n"
-            f"  git tag --delete {tag}\n"
-            f"  git push origin --delete {tag}  # if already pushed"
-        )
+        fail(f"Git tag already exists locally: {tag}")
     if result.returncode != 1:
         fail(result.stderr.strip() or f"Could not check Git tag: {tag}")
 
+    # 检查远程标签；返回码 2 表示没有匹配的标签。
+    result = run_command(
+        ["git", "ls-remote", "--exit-code", "--tags", "origin", f"refs/tags/{tag}"],
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+    if result.returncode == 0:
+        fail(f"Git tag already exists on origin: {tag}")
+    if result.returncode != 2:
+        fail(result.stderr.strip() or f"Could not check Git tag on origin: {tag}")
+
 
 def main(argv: Sequence[str] | None = None) -> int:
-    args = parse_args(sys.argv[1:] if argv is None else argv)
+    args = parse_args(argv)
     _, project_version = read_project_metadata()
     zig_version = read_zig_version()
 
@@ -104,6 +111,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     if not os.getenv("UV_PUBLISH_TOKEN"):
         fail("UV_PUBLISH_TOKEN is not set")
 
+    # 确保工作区干净
     ensure_clean_worktree()
     tag = f"v{args.version}"
     ensure_tag_is_new(tag)
@@ -120,11 +128,10 @@ def main(argv: Sequence[str] | None = None) -> int:
 
     run_command(["uvx", "twine", "check", *(str(wheel) for wheel in wheels)])
 
-    # Push the tag before the irreversible PyPI upload. The push also
-    # catches an existing remote tag without requiring a separate fetch/check.
+    # 先发布到 PyPI，成功后再创建并推送对应的 Git 标签。
+    run_command(["uv", "publish", *(str(wheel) for wheel in wheels)])
     run_command(["git", "tag", "-a", tag, "-m", tag])
     run_command(["git", "push", "origin", tag])
-    run_command(["uv", "publish", *(str(wheel) for wheel in wheels)])
     return 0
 
 

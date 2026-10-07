@@ -1,5 +1,7 @@
 # git-omit
 
+[简体中文](README_zh.md)
+
 Small Git helpers for files that should only be ignored locally.
 
 ## Installation
@@ -44,7 +46,7 @@ git-omit hide '*.log'
 
 ## Development
 
-To build the project, install Zig 0.16.0 and
+To build the project, install Zig 0.17.0 and
 [uv](https://docs.astral.sh/uv/).
 
 ```console
@@ -81,6 +83,6 @@ Before publishing, set `UV_PUBLISH_TOKEN`, make sure the version matches in
 uv run python pypi_publish.py 0.0.3
 ```
 
-The script checks that the versions match and the Git working tree is clean,
-builds and validates all five wheels, creates and pushes the version tag, and
-then publishes the wheels to PyPI.
+The script checks the versions, working tree, and local and remote tags, then
+builds and validates all five wheels. It publishes to PyPI first, then creates
+and pushes the version tag.
