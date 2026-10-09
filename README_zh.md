@@ -17,8 +17,9 @@ uv tool install git-omit
 ```console
 pip install git-omit
 git-omit --help
-python -m git_omit --help
 ```
+
+wheel 会将原生 `git-omit` 可执行文件直接安装到当前环境的命令目录。
 
 提供 Windows x86-64、macOS x86-64/Arm64，以及基于 glibc 的 Linux x86-64/Arm64 wheel。
 

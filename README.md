@@ -18,11 +18,10 @@ Or install it into a Python environment:
 pip install git-omit
 ```
 
-The environment installation supports both entry styles:
+The wheel installs the native executable into the environment's scripts directory:
 
 ```console
 git-omit --help
-python -m git_omit --help
 ```
 
 Prebuilt wheels are published for Windows x86_64, macOS x86_64 and ARM64,
