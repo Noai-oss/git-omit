@@ -16,8 +16,12 @@ uv tool install git-omit
 
 ```console
 pip install git-omit
+```
+
+安装后，在终端直接运行：
+
+```console
 git-omit --help
-python -m git_omit --help
 ```
 
 提供 Windows x86-64、macOS x86-64/Arm64，以及基于 glibc 的 Linux x86-64/Arm64 wheel。

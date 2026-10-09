@@ -21,7 +21,8 @@ authors = [
 Repository = "https://github.com/Noai-oss/git-omit"
 
 [tool.hatch.build.targets.wheel]
-packages = ["python/git_omit"]
+# The build hook supplies the native executable via shared_scripts.
+bypass-selection = true
 
 [tool.hatch.build.targets.wheel.hooks.custom]
 path = "hatch_build.py"
