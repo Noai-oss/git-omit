@@ -18,7 +18,7 @@ Or install it into a Python environment:
 pip install git-omit
 ```
 
-The wheel installs the native executable into the environment's scripts directory:
+After installation, run the command in your terminal:
 
 ```console
 git-omit --help
