@@ -22,10 +22,13 @@ CLI_NAME_UPPER = CLI_NAME.replace("-", "_").upper()
 
 TARGETS = {
     "x86_64-windows": "py3-none-win_amd64",
+    "aarch64-windows": "py3-none-win_arm64",
     "x86_64-macos.11.0": "py3-none-macosx_11_0_x86_64",
     "aarch64-macos.11.0": "py3-none-macosx_11_0_arm64",
     "x86_64-linux-gnu.2.17": "py3-none-manylinux_2_17_x86_64",
     "aarch64-linux-gnu.2.17": "py3-none-manylinux_2_17_aarch64",
+    "x86_64-linux-musl": "py3-none-musllinux_1_2_x86_64",
+    "aarch64-linux-musl": "py3-none-musllinux_1_2_aarch64",
 }
 
 
