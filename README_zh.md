@@ -24,7 +24,8 @@ pip install git-omit
 git-omit --help
 ```
 
-提供 Windows x86-64、macOS x86-64/Arm64，以及基于 glibc 的 Linux x86-64/Arm64 wheel。
+支持 Windows x86-64/ARM64、macOS x86-64/ARM64，以及 Linux x86-64/ARM64。
+Linux wheel 分别面向 glibc 2.17+（`manylinux_2_17`）和 musl 1.2+（`musllinux_1_2`，包括 Alpine Linux）。
 
 ## 命令
 
@@ -58,7 +59,7 @@ zig build test
 zig build -Doptimize=ReleaseSmall
 ```
 
-将五个平台的 wheel 构建到 `dist/`：
+将八个平台的 wheel 构建到 `dist/`：
 
 ```console
 uv run python make_wheels.py
@@ -76,4 +77,4 @@ uv run python make_wheels.py
 uv run python pypi_publish.py 0.0.4
 ```
 
-脚本检查版本、工作区和本地及远程标签，构建并校验五个平台的 wheel，先上传 PyPI，成功后再创建并推送版本标签。
+脚本检查版本、工作区和本地及远程标签，构建并校验八个平台的 wheel，先上传 PyPI，成功后再创建并推送版本标签。

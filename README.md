@@ -24,8 +24,9 @@ After installation, run the command in your terminal:
 git-omit --help
 ```
 
-Prebuilt wheels are published for Windows x86_64, macOS x86_64 and ARM64,
-and glibc-based Linux x86_64 and ARM64.
+Wheels support Windows x86_64/ARM64, macOS x86_64/ARM64, and Linux
+x86_64/ARM64 with glibc 2.17+ (`manylinux_2_17`) or musl 1.2+
+(`musllinux_1_2`, including Alpine Linux).
 
 ## Commands
 
@@ -60,7 +61,7 @@ zig build test
 zig build -Doptimize=ReleaseSmall
 ```
 
-Build all five platform wheels into `dist/` with Zig cross-compilation:
+Build all eight platform wheels into `dist/` with Zig cross-compilation:
 
 ```console
 uv run python make_wheels.py
@@ -83,5 +84,5 @@ uv run python pypi_publish.py 0.0.4
 ```
 
 The script checks the versions, working tree, and local and remote tags, then
-builds and validates all five wheels. It publishes to PyPI first, then creates
+builds and validates all eight wheels. It publishes to PyPI first, then creates
 and pushes the version tag.
